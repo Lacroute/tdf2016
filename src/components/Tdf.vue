@@ -9,10 +9,10 @@
       <div v-if="currentRace != null">
         <div class="navigator">
           <p v-show="previousRace > 0" v-on:click=highlightFeature(previousRace)>
-            Étape {{ previousRace }} <
+            Étape {{ previousRace }} ←
           </p>
           <p v-show="previousRace < races.length" v-on:click=highlightFeature(nextRace)>
-            > Étape {{ nextRace }}
+            → Étape {{ nextRace }}
           </p>
         </div>
 
