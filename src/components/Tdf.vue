@@ -1,5 +1,5 @@
 <template>
-  <div class="race-selector">
+  <div class="race-selector" v-if="currentRace != null">
     <race v-for="race in races | orderBy 'stage'"
       :race="race">
     </race>
@@ -11,14 +11,14 @@
           <p v-show="previousRace > 0" v-on:click=highlightFeature(previousRace)>
             Étape {{ previousRace }} ←
           </p>
-          <p v-show="previousRace < races.length" v-on:click=highlightFeature(nextRace)>
+          <p v-show="nextRace < races.length" v-on:click=highlightFeature(nextRace)>
             → Étape {{ nextRace }}
           </p>
         </div>
 
         <p>
           Étape {{ currentRace.stage }}
-        <span>{{ currentRace.data.name }}<span>
+          <span>{{ currentRace.data.name }}<span>
         </p>
       </div>
       <div v-else class="start">
@@ -28,6 +28,14 @@
         </p>
       </div>
     </header>
+    <div class="race-details" v-if="currentRace != null">
+      <span>
+        Distance {{ currentRace.data.distance }} km
+      </span>
+      <span>
+        Dénivelé {{ elevation }} m
+      </span>
+    </div>
   </section>
   <div id="mapid"></div>
 </template>
@@ -61,6 +69,10 @@ export default {
     // Return the next race
     nextRace: function () {
       return this.currentRace.stage + 1
+    },
+
+    elevation: function () {
+      return this.currentRace.data.elevation[1] - this.currentRace.data.elevation[0]
     }
   },
 
@@ -141,6 +153,7 @@ export default {
 
     // When data is loaded.
     jsonReady: function (tdf) {
+      // Reference to the component scope.
       var that = this
 
       layerGroup = L.geoJson(
@@ -156,6 +169,7 @@ export default {
             var coords = feature.geometry.coordinates
             var start = coords[0]
             var end = coords[coords.length - 1]
+            let elevation = that.arrayMinMax(feature.geometry.coordinates)
 
             // Store it.
             let race = {
@@ -163,7 +177,8 @@ export default {
               data: {
                 raw: featureName,
                 name: name,
-                distance: parseInt(distance)
+                distance: parseInt(distance),
+                elevation: elevation
               },
               start: start,
               end: end,
@@ -264,6 +279,26 @@ export default {
         500,
         style
       ).addTo(map)
+    },
+
+    // Helper to find the min and max of the altitude cell.
+    arrayMinMax: function (arr) {
+      let len = arr.length
+      let min = Infinity
+      let max = -Infinity
+      let cell
+
+      while (len--) {
+        cell = arr[len][2]
+        if (cell < min) {
+          min = cell
+        }
+        if (cell > max) {
+          max = cell
+        }
+      }
+
+      return [min, max]
     }
   },
 
@@ -324,6 +359,7 @@ export default {
   top: 50%;
   transform: translateY(-50%);
   z-index: 9999;
+  left: 10px;
 }
 
 .navigator{
@@ -343,5 +379,16 @@ export default {
 
 .navigator p + p{
   float: right;
+}
+
+.race-details{
+  font-size: 0;
+  padding-bottom: 10px;
+}
+.race-details span{
+  display: inline-block;
+  width: 50%;
+  text-align: center;
+  font-size: 1.150rem;
 }
 </style>
