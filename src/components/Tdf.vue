@@ -36,7 +36,7 @@
         Distance {{ currentRace.data.distance }} km
       </span>
       <span>
-        Dénivelé {{ elevation }} m
+        Dénivelé max {{ elevation }} m
       </span>
       <svg id="summary"></svg>
     </div>
@@ -302,10 +302,9 @@ export default {
 
       svg.selectAll('path.line-race')
 					.data([coords])
+          .transition()
           .attr('d', valueLine)
-					.transition()
-					.ease('linear')
-					.duration(1000)
+					.duration(300)
     },
 
     // Move the camera to the specific race
@@ -315,12 +314,13 @@ export default {
         L.latLng(this.currentRace.end[1], this.currentRace.end[0])
       )
 
+      // Add padding because of the overview
       map.fitBounds(
         bounds,
         {
           maxZoom: 10,
           animate: true,
-          paddingTopLeft: [200, 200],
+          paddingTopLeft: [300, 300],
           paddingBottomRight: [0, 200]
         }
       )
@@ -382,7 +382,7 @@ export default {
   font-family: 'Lato', sans-serif;
   font-weight: 300;
   position: absolute;
-  top: 20px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
