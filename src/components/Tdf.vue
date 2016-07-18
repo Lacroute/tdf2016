@@ -31,11 +31,11 @@
         </p>
       </div>
     </header>
-    <div class="race-details" v-if="currentRace != null">
-      <span>
+    <div class="race-details" v-show="currentRace != null">
+      <span v-if="currentRace != null">
         Distance {{ currentRace.data.distance }} km
       </span>
-      <span>
+      <span v-if="currentRace != null">
         Dénivelé max {{ elevation }} m
       </span>
       <svg id="summary"></svg>
@@ -83,12 +83,12 @@ export default {
   computed: {
     // Return the previous race
     previousRace: function () {
-      return this.currentRace.stage - 1
+      if (this.currentRace) return this.currentRace.stage - 1
     },
 
     // Return the next race
     nextRace: function () {
-      return this.currentRace.stage + 1
+      if (this.currentRace) return this.currentRace.stage + 1
     },
 
     elevation: function () {
@@ -245,7 +245,6 @@ export default {
       }
       // Init svg
       this.drawRaceSummary()
-      this.highlightFeature(1)
     },
 
     // Main function for higlighting.
@@ -291,6 +290,8 @@ export default {
       svg.append('svg:path')
         .attr('class', 'line-race')
         .attr('d', valueLine(coords))
+
+      // console.log(svg.selectAll('path.line-race'))
     },
 
     // Update the line with the current coordinates.
@@ -300,10 +301,9 @@ export default {
       x.domain([0, coords.length])
       y.domain([0, this.currentRace.data.elevation[1]])
 
-      svg.selectAll('path.line-race')
-					.data([coords])
+      svg.select('path.line-race')
           .transition()
-          .attr('d', valueLine)
+          .attr('d', valueLine(coords))
 					.duration(300)
     },
 
