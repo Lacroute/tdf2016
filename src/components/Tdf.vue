@@ -4,14 +4,17 @@
       :race="race">
     </race>
   </div>
+
   <section class="race-overview">
     <header>
       <div v-if="currentRace != null">
         <div class="navigator">
-          <p v-show="previousRace > 0" v-on:click=highlightFeature(previousRace)>
+          <p
+            v-show="previousRace > 0"
+            v-on:click=highlightFeature(previousRace) >
             Étape {{ previousRace }} ←
           </p>
-          <p v-show="nextRace < races.length" v-on:click=highlightFeature(nextRace)>
+          <p v-show="nextRace <= races.length" v-on:click=highlightFeature(nextRace)>
             → Étape {{ nextRace }}
           </p>
         </div>
@@ -35,6 +38,7 @@
       <span>
         Dénivelé {{ elevation }} m
       </span>
+      <svg id="summary"></svg>
     </div>
   </section>
   <div id="mapid"></div>
@@ -44,10 +48,26 @@
 import Race from './Race.vue'
 
 var L = require('leaflet')
+var d3 = require('d3')
 var Vue = require('vue')
 Vue.use(require('vue-resource'))
 var map
 var layerGroup
+
+// Make somme d3 global
+var svg
+var width = 430
+var height = 100
+var x = d3.scale.linear()
+  .range([0, width])
+
+var y = d3.scale.linear()
+  .range([height, 0])
+
+var valueLine = d3.svg.line()
+  .x(function (d, i) { return x(i) })
+  .y(function (d) { return y(+d[2]) })
+// END D3
 
 export default {
   name: 'Tdf',
@@ -93,7 +113,7 @@ export default {
     // Set custom tile layer from mapbox
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
       attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
-      maxZoom: 18,
+      maxZoom: 13,
       id: 'mapbox.light',
       accessToken: 'pk.eyJ1IjoibGFjcm91dGUiLCJhIjoiY2lxcDhoZXpqMDA1M2h4bms4YWRyNGlzbiJ9.VLlfBQGaxNFE9M_Ug3YXhQ'
     }).addTo(map)
@@ -156,6 +176,11 @@ export default {
       // Reference to the component scope.
       var that = this
 
+      // Hot reload fix
+      this.races = []
+      this.currentRace = null
+
+      // Draw the races.
       layerGroup = L.geoJson(
         tdf,
         {
@@ -193,8 +218,8 @@ export default {
 
             layer.on(
               {
+                // highlight the race on click
                 'click': function (e) {
-                  // highlight the feature
                   var stage = that.getStageFromName(e.target.feature.properties.name)
                   that.highlightFeature(stage)
                 }
@@ -215,13 +240,18 @@ export default {
         let race = this.races.find(function (r) {
           return r.stage === stage
         })
+
         race.layerId = layerId
       }
+      // Init svg
+      this.drawRaceSummary()
+      this.highlightFeature(1)
     },
 
     // Main function for higlighting.
     highlightFeature: function (stage) {
       this.currentRace = this.updateRaces(stage)
+      this.updateRaceSummary()
       this.currentRace.start.circle.setStyle(this.hightlightStyleCircleStart())
       this.currentRace.end.circle.setStyle(this.hightlightStyleCircleEnd())
       this.updateCamera()
@@ -252,6 +282,32 @@ export default {
       return r
     },
 
+    // Draw a graphic who summarize the race.
+    drawRaceSummary: function () {
+      var coords = [[0, 0, 0]]
+
+      svg = d3.select('#summary')
+
+      svg.append('svg:path')
+        .attr('class', 'line-race')
+        .attr('d', valueLine(coords))
+    },
+
+    // Update the line with the current coordinates.
+    updateRaceSummary: function () {
+      var coords = layerGroup.getLayer(this.currentRace.layerId).feature.geometry.coordinates
+
+      x.domain([0, coords.length])
+      y.domain([0, this.currentRace.data.elevation[1]])
+
+      svg.selectAll('path.line-race')
+					.data([coords])
+          .attr('d', valueLine)
+					.transition()
+					.ease('linear')
+					.duration(1000)
+    },
+
     // Move the camera to the specific race
     updateCamera: function () {
       var bounds = L.latLngBounds(
@@ -259,15 +315,13 @@ export default {
         L.latLng(this.currentRace.end[1], this.currentRace.end[0])
       )
 
-      // map.panInsideBounds(bounds)
       map.fitBounds(
         bounds,
         {
+          maxZoom: 10,
           animate: true,
-          pan: {
-            animate: true,
-            duration: 1
-          }
+          paddingTopLeft: [200, 200],
+          paddingBottomRight: [0, 200]
         }
       )
     },
@@ -334,6 +388,7 @@ export default {
   z-index: 1;
   background: #f5da3f;
   color: #000;
+  min-width: 450px;
 }
 
 .race-overview p{
@@ -390,5 +445,18 @@ export default {
   width: 50%;
   text-align: center;
   font-size: 1.150rem;
+}
+
+#summary{
+  width: 430px;
+  height: 100px;
+  margin: 10px auto 0;
+  display: block;
+}
+
+#summary path {
+  stroke: black;
+  stroke-width: 1;
+  fill: none;
 }
 </style>
