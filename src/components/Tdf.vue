@@ -56,10 +56,10 @@ var layerGroup
 
 // Make somme d3 global
 var svg
-var width = 430
+var width = 390
 var height = 100
 var x = d3.scale.linear()
-  .range([0, width])
+  .range([40, width])
 
 var y = d3.scale.linear()
   .range([height, 0])
@@ -296,6 +296,19 @@ export default {
 
       svg = d3.select('#summary')
 
+      var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient('left')
+        .ticks(3, ' m')
+        .tickSize(6, 0)
+
+      svg.append('g')
+        .attr('class', 'y-axis')
+        .attr('transform', 'translate(40, 0)')
+        .call(yAxis)
+        .selectAll('text')
+        .attr('transform', 'translate(0, -7)')
+
       svg.append('svg:path')
         .attr('class', 'line-race')
         .attr('d', valueLine(coords))
@@ -462,9 +475,20 @@ export default {
   display: block;
 }
 
-#summary path {
+#summary path, line {
   stroke: black;
   stroke-width: 1;
   fill: none;
+}
+
+#summary .y-axis{
+  stroke: black;
+  font-family: 'Lato', sans-serif;
+  font-size: 10px;
+  font-weight: 300;
+}
+
+#summary .y-axis text{
+  transform: translate(0,-10);
 }
 </style>
