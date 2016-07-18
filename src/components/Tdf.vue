@@ -231,7 +231,10 @@ export default {
       ).addTo(map)
 
       // Iterate through the layer because the _leaflet_id is not readable in onEachFeature function
+      // Also get the min/max elevation value
       let l = layerGroup._layers
+      let minElevation = Infinity
+      let maxElevation = -Infinity
       for (let i in l) {
         let layer = l[i]
         let layerId = layer._leaflet_id
@@ -240,10 +243,16 @@ export default {
         let race = this.races.find(function (r) {
           return r.stage === stage
         })
-
+        if (race.data.elevation[0] < minElevation) {
+          minElevation = race.data.elevation[0]
+        }
+        if (race.data.elevation[1] > maxElevation) {
+          maxElevation = race.data.elevation[1]
+        }
         race.layerId = layerId
       }
       // Init svg
+      y.domain([minElevation, maxElevation])
       this.drawRaceSummary()
     },
 
@@ -299,7 +308,6 @@ export default {
       var coords = layerGroup.getLayer(this.currentRace.layerId).feature.geometry.coordinates
 
       x.domain([0, coords.length])
-      y.domain([0, this.currentRace.data.elevation[1]])
 
       svg.select('path.line-race')
           .transition()
